@@ -46,7 +46,7 @@ jobs:
         run: |
           az aks get-credentials \
             --resource-group rg-gitops-dev1 \
-            --name aks-dev \
+            --name aks-dev1 \
             --admin \
             --overwrite-existing
 
