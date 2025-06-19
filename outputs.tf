@@ -3,10 +3,10 @@ output "aks_name" {
   value = module.aks.name
 }
 
-output "acr_login_server" {
-  description = "ACR login server"
-  value = module.acr.login_server
-}
+# output "acr_login_server" {
+#   description = "ACR login server"
+#   value = module.acr.login_server
+# }
 
 # output "keyvault_name" {
 #   description = "Key Vault name"
