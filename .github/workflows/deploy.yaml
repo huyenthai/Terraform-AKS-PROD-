@@ -1,0 +1,64 @@
+name: Deploy Infra and ArgoCD
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+    
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        
+      - name: Terraform Apply
+        run: |
+          terraform init
+          terraform apply -auto-approve -var-file="environments/dev/terraform.tfvars"
+
+  deploy-argocd:
+    needs: terraform
+    runs-on: ubuntu-latest
+    steps:
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Checkout repo
+        uses: actions/checkout@v3
+      
+      - name: Get AKS credentials
+        run: |
+          az aks get-credentials \
+            --resource-group rg-gitops-dev \
+            --name aks-dev \
+            --admin \
+            --overwrite-existing
+
+      - name: Deploy ArgoCD
+        run: |
+          kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
+          kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+      - name: Patch Argo CD server to use LoadBalancer
+        run: |
+          kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}'
+
+      - name: Apply root ArgoCD app
+        run: |
+          cd environments/dev          
+          kubectl apply -f root-application.yaml
