@@ -24,6 +24,7 @@ jobs:
           terraform init
           terraform apply -auto-approve -var-file="environments/dev/terraform.tfvars"
 
+
   deploy-argocd:
     needs: terraform
     runs-on: ubuntu-latest
